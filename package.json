@@ -1,0 +1,1 @@
+{"name":"tripeasy","version":"1.0.0","private":true,"scripts":{"dev":"concurrently -k -n API,WEB \"npm:dev:backend\" \"npm:dev:frontend\"","dev:frontend":"npm --prefix frontend run dev","dev:backend":"npm --prefix backend run dev","build":"npm --prefix frontend run build"},"devDependencies":{"concurrently":"^9.1.2"}}
