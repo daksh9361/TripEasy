@@ -2,7 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 const crypto = require('crypto');
 const User = require('../models/User');
 const EmailOtp = require('../models/EmailOtp');
@@ -68,36 +68,25 @@ function safeEqual(left, right) {
 }
 
 function createMailer() {
-  const user = process.env.SMTP_USER?.trim();
-  const pass = process.env.SMTP_PASS?.trim();
-  const host = process.env.SMTP_HOST?.trim() || 'smtp.gmail.com';
-  const port = Number(process.env.SMTP_PORT?.trim() || 587);
-  const secureSetting = process.env.SMTP_SECURE?.trim().toLowerCase();
-  const from = process.env.SMTP_FROM?.trim() || user;
+  const apiKey = process.env.RESEND_API_KEY?.trim();
+  const from = process.env.RESEND_FROM?.trim();
 
-  if (!user || !pass) {
-    return { error: 'Email delivery needs the project SMTP sender settings. Set SMTP_USER and SMTP_PASS in backend/.env, then restart the backend.' };
+  if (!apiKey) {
+    return { error: 'Email delivery is not configured. Set RESEND_API_KEY in the backend environment.' };
   }
-  if (!Number.isInteger(port) || port < 1 || port > 65535 || !['', 'true', 'false'].includes(secureSetting)) {
-    return { error: 'SMTP settings are invalid. Check SMTP_HOST, SMTP_PORT, and SMTP_SECURE in backend/.env.' };
+  if (!from) {
+    return { error: 'Email delivery is not configured. Set RESEND_FROM to a sender on a verified Resend domain.' };
   }
 
-  const secure = secureSetting ? secureSetting === 'true' : port === 465;
-  const transporter = nodemailer.createTransport({
-    host,
-    port,
-    secure,
-    requireTLS: !secure,
-    auth: { user, pass },
-  });
-  return { transporter, from };
+  return { client: new Resend(apiKey), from };
 }
 
 function logMailFailure(context, error) {
-  const details = {};
-  if (typeof error?.code === 'string') details.code = error.code;
-  if (typeof error?.command === 'string') details.command = error.command;
-  if (Number.isInteger(error?.responseCode)) details.responseCode = error.responseCode;
+  const details = { provider: 'Resend' };
+  const errorCode = typeof error?.code === 'string' ? error.code : error?.name;
+  if (typeof errorCode === 'string' && /^[A-Za-z0-9_.-]{1,64}$/.test(errorCode)) details.code = errorCode;
+  const statusCode = Number.isInteger(error?.statusCode) ? error.statusCode : error?.responseCode;
+  if (Number.isInteger(statusCode)) details.statusCode = statusCode;
   console.error(`[TripEasy] ${context}`, details);
 }
 
@@ -122,13 +111,19 @@ async function sendOtp({ email, purpose, signupData = null }) {
   const code = String(crypto.randomInt(0, 1_000_000)).padStart(6, '0');
   const subject = purpose === 'signup' ? 'Verify your TripEasy email' : 'Reset your TripEasy password';
   const purposeText = purpose === 'signup' ? 'verify your email and finish creating your account' : 'reset your TripEasy password';
-  await mailer.transporter.sendMail({
+  const delivery = await mailer.client.emails.send({
     from: mailer.from,
     to: email,
     subject,
     text: `Your TripEasy verification code is ${code}. Use it to ${purposeText}. This code expires in 5 minutes. If you did not request this email, you can ignore it.`,
     html: `<p>Your TripEasy verification code is:</p><p style="font-size:28px;font-weight:bold;letter-spacing:6px">${code}</p><p>Use it to ${purposeText}. It expires in 5 minutes. If you did not request this email, you can ignore it.</p>`,
   });
+  if (delivery?.error) {
+    const error = new Error('Resend rejected the email request.');
+    if (typeof delivery.error.name === 'string') error.code = delivery.error.name;
+    if (Number.isInteger(delivery.error.statusCode)) error.statusCode = delivery.error.statusCode;
+    throw error;
+  }
 
   const nextValues = {
     codeHash: otpHash(email, purpose, code),
@@ -192,7 +187,7 @@ router.post('/signup/send-otp', async (req, res) => {
     return res.json({ message: 'Verification code sent. Check your email.' });
   } catch (error) {
     logMailFailure('signup OTP delivery failed', error);
-    return res.status(502).json({ message: 'Could not send the verification email. Check SMTP settings and try again.' });
+    return res.status(502).json({ message: 'Could not send the verification email. Check RESEND_API_KEY and the verified RESEND_FROM sender, then try again.' });
   }
 });
 
@@ -272,7 +267,7 @@ router.post('/password/forgot/send-otp', async (req, res) => {
     return res.json({ message: 'If a verified account exists, a password reset code has been sent.' });
   } catch (error) {
     logMailFailure('password reset email failed', error);
-    return res.status(502).json({ message: 'Could not send the reset email. Check SMTP settings and try again.' });
+    return res.status(502).json({ message: 'Could not send the reset email. Check the Resend API key and verified sender configuration, then try again.' });
   }
 });
 
