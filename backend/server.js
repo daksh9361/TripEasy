@@ -13,12 +13,12 @@ const groupRoutes = require('./routes/groups');
 const app = express();
 const httpServer = http.createServer(app);
 const port = process.env.PORT || 5000;
-const allowedOrigins = new Set(
-  (process.env.CLIENT_ORIGIN || 'http://localhost:5173,http://127.0.0.1:5173')
-    .split(',')
-    .map((origin) => origin.trim())
-    .filter(Boolean),
-);
+const localDevelopmentOrigins = ['http://localhost:5173', 'http://127.0.0.1:5173'];
+const configuredClientOrigins = (process.env.CLIENT_ORIGIN || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+const allowedOrigins = new Set([...configuredClientOrigins, ...localDevelopmentOrigins]);
 
 app.use(cors({
   origin(origin, callback) {

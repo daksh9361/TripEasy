@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import AuthPage from './components/AuthPage.jsx';
 import TripDashboard from './TripDashboard.jsx';
+import { apiUrl } from './utils/api.js';
 import './styles/auth.css';
 import './styles/app.css';
 
@@ -12,7 +13,7 @@ export default function App() {
 
   useEffect(() => {
     let active = true;
-    fetch('/api/auth/me', { credentials: 'include' })
+    fetch(apiUrl('/api/auth/me'), { credentials: 'include' })
       .then(async (response) => {
         const payload = await response.json().catch(() => ({}));
         if (!active) return;
@@ -39,7 +40,7 @@ export default function App() {
   const logout = async () => {
     let serverConfirmed = false;
     try {
-      const response = await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+      const response = await fetch(apiUrl('/api/auth/logout'), { method: 'POST', credentials: 'include' });
       serverConfirmed = response.ok;
     } catch {
       serverConfirmed = false;

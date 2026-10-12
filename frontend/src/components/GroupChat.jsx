@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Send } from 'lucide-react';
 import { io } from 'socket.io-client';
-import { api } from '../utils/api.js';
+import { API_BASE_URL, api } from '../utils/api.js';
 
 function mergeMessages(current, additions) {
   const unique = new Map(current.map((message) => [message.id, message]));
@@ -26,7 +26,7 @@ export default function GroupChat({ groupId, user, embedded = false }) {
 
   useEffect(() => {
     let mounted = true;
-    const socket = io({ withCredentials: true });
+    const socket = io(API_BASE_URL || undefined, { withCredentials: true });
     socketRef.current = socket;
     setMessages([]); setConnected(false); setJoined(false); setLoading(true); setError('');
     socket.on('connect', () => {
