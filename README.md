@@ -4,7 +4,7 @@ TripEasy is a full-stack web application that helps users manage personal trips,
 
 ## 🚀 Live Demo
 
-**Website:**  https://trip-easy-eight.vercel.app/
+**Website:**  https://trip-easy-eight.vercel.app
 
 ## ✨ Features
 
