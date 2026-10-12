@@ -26,8 +26,8 @@ module.exports = function attachGroupChat(io) {
     try {
       const payload = jwt.verify(token, secret, { algorithms: ['HS256'], issuer: 'TripEasy' });
       if (!payload.sub) return next(new Error('Your session is invalid.'));
-      const user = await User.findById(payload.sub).select('_id fullName email emailVerifiedAt');
-      if (!user || !user.emailVerifiedAt) return next(new Error('A verified account is required.'));
+      const user = await User.findById(payload.sub).select('_id fullName email');
+      if (!user) return next(new Error('Your account could not be found. Please log in again.'));
       socket.data.user = user;
       return next();
     } catch {

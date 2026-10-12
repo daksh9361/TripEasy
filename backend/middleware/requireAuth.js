@@ -26,8 +26,8 @@ async function requireAuth(req, res, next) {
   try {
     const payload = jwt.verify(token, secret, { algorithms: ['HS256'], issuer: 'TripEasy' });
     if (!payload.sub) return res.status(401).json({ message: 'Your session is invalid. Please log in again.' });
-    const user = await User.findById(payload.sub).select('_id fullName email emailVerifiedAt');
-    if (!user || !user.emailVerifiedAt) return res.status(401).json({ message: 'Your account needs email verification. Verify your email and log in again.' });
+    const user = await User.findById(payload.sub).select('_id fullName email');
+    if (!user) return res.status(401).json({ message: 'Your account could not be found. Please log in again.' });
     req.user = user;
     return next();
   } catch {

@@ -6,7 +6,6 @@ async function connectDatabase(uri = process.env.MONGODB_URI) {
   const User = require('../models/User');
   const models = [
     User,
-    require('../models/EmailOtp'),
     require('../models/Trip'),
     require('../models/ChatMessage'),
   ];
