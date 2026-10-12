@@ -19,21 +19,27 @@ function publicUser(user) {
   return { id: user._id.toString(), fullName: user.fullName, email: user.email };
 }
 
-function cookieOptions() {
+function cookieOptions(req) {
+  const forwardedProtocol = req.get('x-forwarded-proto')?.split(',')[0].trim().toLowerCase();
+  const isSecureRequest = process.env.NODE_ENV === 'production' || req.secure || forwardedProtocol === 'https';
   return {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    // The frontend and API use different origins in production (for example Vercel and Render).
+    // Cross-site fetch requests need SameSite=None and Secure. Partitioning also allows the
+    // session to work when the browser blocks unpartitioned third-party cookies.
+    secure: isSecureRequest,
+    sameSite: isSecureRequest ? 'none' : 'lax',
+    partitioned: isSecureRequest,
     path: '/',
     maxAge: COOKIE_MAX_AGE,
   };
 }
 
-function setSessionCookie(res, userId) {
+function setSessionCookie(req, res, userId) {
   const secret = process.env.JWT_SECRET;
   if (!secret || Buffer.byteLength(secret) < 32) throw new Error('JWT_SECRET must contain at least 32 bytes.');
   const token = jwt.sign({ sub: userId.toString() }, secret, { algorithm: 'HS256', expiresIn: '1h', issuer: 'TripEasy' });
-  res.cookie(COOKIE_NAME, token, cookieOptions());
+  res.cookie(COOKIE_NAME, token, cookieOptions(req));
 }
 
 function normalizeEmail(value) {
@@ -78,7 +84,7 @@ router.post('/login', async (req, res) => {
     const user = await User.findOne({ email }).select('+passwordHash');
     const passwordMatches = user ? await bcrypt.compare(password, user.passwordHash) : false;
     if (!user || !passwordMatches) return res.status(401).json({ message: 'Invalid email or password. Check your details and try again.' });
-    setSessionCookie(res, user._id);
+    setSessionCookie(req, res, user._id);
     return res.json({ message: 'Logged in.', user: publicUser(user) });
   } catch (error) {
     console.error('Login failed:', error.message);
@@ -119,8 +125,8 @@ router.post('/password/change', requireAuth, async (req, res) => {
   }
 });
 
-router.post('/logout', (_req, res) => {
-  const options = cookieOptions();
+router.post('/logout', (req, res) => {
+  const options = cookieOptions(req);
   delete options.maxAge;
   res.clearCookie(COOKIE_NAME, options);
   res.json({ message: 'Logged out.' });
