@@ -1,58 +1,180 @@
-# TripEasy – Trip Expense Splitter
+# 🌍 TripEasy – Trip Expense Splitter
 
-TripEasy is a responsive React/Vite app backed by an Express API and MongoDB. Accounts use email and password authentication, JWT sessions, and bcrypt password hashes. Personal trips and shared groups use the same trip and expense records.
+TripEasy is a full-stack web application that helps users manage personal trips, split expenses, organize group trips, and track shared spending. It includes group chat, expense summaries, settlement calculations, and PDF exports.
 
-## Requirements
+## 🚀 Live Demo
 
-- Node.js 20 or newer
-- MongoDB
-- No email service is required for signup or login
+**Website:** https://trip-easy-eight.vercel.app
 
-## Install and run
+## ✨ Features
 
-Open this folder in VS Code and run these commands in its integrated terminal:
+* 🔐 **User Authentication** – Signup and login with email and password.
+* 🧳 **Personal Trips** – Create and manage individual trips.
+* 👥 **Group Trips** – Create groups and invite members using a unique group code.
+* 💰 **Expense Management** – Add, edit, and delete trip expenses.
+* 🧮 **Expense Splitting** – Calculate per-person shares and contributions.
+* 🤝 **Settlements** – Track who owes whom.
+* 💬 **Group Chat** – Communicate with group members in real time.
+* 🗑️ **Group Management** – Manage groups and remove members.
+* 📄 **PDF Export** – Export expense summaries as PDF files.
+* 📋 **Copy Summary** – Copy trip expense summaries.
+* 🔒 **Protected APIs** – JWT-based authentication and access checks.
+* 📱 **Responsive UI** – Use the application on different screen sizes.
+* 🗄️ **MongoDB Storage** – Store user accounts, trips, expenses, and messages.
 
-```powershell
+## 🛠️ Tech Stack
+
+**Frontend**
+
+* React.js
+* Vite
+* JavaScript
+* HTML5
+* CSS3
+
+**Backend**
+
+* Node.js
+* Express.js
+* REST API
+* Socket.IO
+
+**Database & Security**
+
+* MongoDB
+* JWT Authentication
+* bcryptjs
+* HTTP-only session cookies
+
+**Tools**
+
+* Git & GitHub
+* VS Code
+* Vercel
+* Render
+
+## 📋 Requirements
+
+* Node.js 20 or newer
+* MongoDB
+* Git
+* VS Code (recommended)
+
+## ⚙️ Installation and Setup
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/daksh9361/TripEasy.git
+cd TripEasy
+```
+
+### 2. Install Dependencies
+
+```bash
 npm install
 npm --prefix frontend install
 npm --prefix backend install
+```
+
+### 3. Configure Environment Variables
+
+Create or configure `backend/.env` using `backend/.env.example`.
+
+Add your own MongoDB connection string and a secure JWT secret.
+
+```env
+MONGODB_URI=your_mongodb_connection_string
+JWT_SECRET=your_secure_jwt_secret
+PORT=5000
+```
+
+Use the variable names and other settings required by your existing `.env.example` file.
+
+**Important:** Never upload `.env` files, database credentials, JWT secrets, or other sensitive information to GitHub.
+
+### 4. Start the Application
+
+```bash
 npm run dev
 ```
 
-The frontend runs at `http://localhost:5173`; the API health endpoint is `http://localhost:5000/api/health`.
+The frontend runs at:
 
-To run them separately, use two terminals:
+`http://localhost:5173`
 
-```powershell
+The backend API runs at:
+
+`http://localhost:5000`
+
+API health check:
+
+`http://localhost:5000/api/health`
+
+You can also start the frontend and backend separately:
+
+```bash
 npm run dev:frontend
 npm run dev:backend
 ```
 
-## Configure MongoDB and JWT
+## 👤 How to Use
 
-The existing `backend/.env` is used by the server. Keep the existing `MONGODB_URI` and `JWT_SECRET` values. Signup and login do not require SMTP, Resend, or email OTP configuration. Never commit `backend/.env`; it is excluded by `.gitignore`. The frontend does not receive MongoDB or JWT secrets.
+1. Create an account using the signup page.
+2. Log in with your registered email and password.
+3. Create a personal trip or a shared group.
+4. Share the group code with other registered users.
+5. Add expenses and manage shared spending.
+6. Use settlement calculations to understand who owes whom.
+7. Chat with group members and export expense summaries.
 
-Copy `backend/.env.example` when setting up another machine and set a private MongoDB URI and a JWT secret of at least 32 bytes.
+## 🏗️ Project Structure
 
-## Account flows
+```text
+TripEasy/
+├── frontend/
+│   └── src/
+├── backend/
+│   ├── routes/
+│   ├── models/
+│   └── server.js
+├── package.json
+├── .gitignore
+└── README.md
+```
 
-1. Sign up with a name, email, and matching password fields. Passwords are bcrypt-hashed before being saved; duplicate email addresses are rejected.
-2. After account creation, TripEasy displays a success message and returns to Login. Signup does not create a session.
-3. Log in with the registered email and password. Unregistered accounts and incorrect passwords receive the same clear credential error.
-4. The sidebar opens Dashboard, Expenses, Profile, and Logout. Logout clears the session cookie.
+The exact files and folders may vary depending on the current implementation.
 
-## Trips, groups and expenses
+## 🧪 Build
 
-New accounts start with no trips, members, expenses, groups, or sample data. Create a personal trip and enter its members, then use the Expenses page to add, edit, or delete expenses. Totals, per-person shares, contributions, settlements, Copy Summary, and PDF exports use the selected trip's MongoDB data.
+To create a production build of the frontend:
 
-Use **Create Group** to create a shared trip group. TripEasy returns a private six-character code once to the creator; share it manually. Other logged-in members can use **Join Group** with that code. The group admin is the creator, and every group member can view the group's shared expenses and chat. The same trip expense and settlement calculations are used for groups. Group and trip APIs check the authenticated user against the trip's owner or member list.
-
-Group chat uses Socket.IO with the existing JWT session cookie. Messages are stored in MongoDB and loaded when a member opens the group. Chat rooms and message history are restricted to current group members. No separate paid chat service or frontend secret is used.
-
-To verify a two-account group flow, create or sign in to two accounts in separate browsers. Account A creates a group and shares its displayed code; Account B joins with that code. Open the group from **My Groups** in both sessions, add expenses, and send a chat message to confirm it appears in the other session. Refresh either session to confirm the expense and message history remain available. Joining the same group again should return an already-a-member error. A code with an invalid format or unknown value is rejected, and accounts outside the group cannot view its details, expenses, or message history.
-
-## Build
-
-```powershell
+```bash
 npm run build
 ```
+
+## 🔐 Security
+
+* Passwords are hashed before being stored.
+* Authentication uses JWT-based sessions.
+* Protected APIs verify user access.
+* Group data is restricted to authorized members.
+* Environment variables are used for sensitive configuration.
+
+## 🔮 Future Improvements
+
+* Online payment integration for settlements.
+* More detailed expense analytics.
+* Trip notifications and reminders.
+* Enhanced mobile experience.
+
+## 👨‍💻 Author
+
+**Ajay Kumar**
+
+* GitHub: https://github.com/daksh9361
+* LinkedIn: https://www.linkedin.com/in/ajay-kumar-a01755315
+
+---
+
+⭐ If you find this project useful, consider giving it a star on GitHub.
