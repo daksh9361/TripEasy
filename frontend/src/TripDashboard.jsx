@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Check, LayoutDashboard, LogOut, Menu, MessageCircle, Moon, Plane, Plus, ReceiptText, Sun, UserRound, X } from 'lucide-react';
 import TripForm from './components/TripForm.jsx';
 import ExpenseForm from './components/ExpenseForm.jsx';
@@ -93,6 +93,11 @@ export default function TripDashboard({ user, onLogout, onUserChange }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState(null);
+
+  const removeGroupFromTrips = useCallback((groupId) => {
+    setTrips((current) => current.filter((trip) => trip.id !== groupId));
+    setActiveTripId((current) => current === groupId ? '' : current);
+  }, []);
 
   useEffect(() => {
     try { window.localStorage.setItem('tripeasy-theme', theme); } catch { /* Keep the selected theme for this session. */ }
@@ -266,7 +271,7 @@ export default function TripDashboard({ user, onLogout, onUserChange }) {
         </section>
       </section>}
 
-      {page === 'chat' && <ChatPage groups={groups} user={user} selectedGroup={activeTrip?.isGroup ? activeTrip : null} loading={loading} onSelectGroup={(group) => setActiveTripId(group.id)} onGroupChange={(group) => setTrips((current) => [group, ...current.filter((trip) => trip.id !== group.id)])} onViewExpenses={(group) => { setActiveTripId(group.id); setShowExpenseForm(false); setEditingExpense(null); setPage('expenses'); }} notify={notify}/>}
+      {page === 'chat' && <ChatPage groups={groups} user={user} selectedGroup={activeTrip?.isGroup ? activeTrip : null} loading={loading} onSelectGroup={(group) => setActiveTripId(group?.id || '')} onGroupChange={(group) => setTrips((current) => [group, ...current.filter((trip) => trip.id !== group.id)])} onGroupDeleted={removeGroupFromTrips} onViewExpenses={(group) => { setActiveTripId(group.id); setShowExpenseForm(false); setEditingExpense(null); setPage('expenses'); }} notify={notify}/>}
 
       {page === 'expenses' && <section className="content-page">
         <div className="page-heading expenses-page-heading"><div><p className="eyebrow">YOUR TRIP</p><h2>Trip Expenses</h2><p>Keep your group spending organized.</p></div>{activeTrip?.isGroup ? <button type="button" className="button button-secondary" onClick={() => selectPage('chat')}><MessageCircle size={16}/>Back to Chat</button> : personalTrips.length > 0 && <label className="trip-select-label">Select trip<select value={activeTripId} onChange={(event) => { setActiveTripId(event.target.value); setShowExpenseForm(false); setEditingExpense(null); }} aria-label="Select trip">{personalTrips.map((trip) => <option key={trip.id} value={trip.id}>{trip.name}</option>)}</select></label>}</div>

@@ -13,7 +13,7 @@ function displayTime(value) {
   return new Date(value).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' });
 }
 
-export default function GroupChat({ groupId, user, embedded = false }) {
+export default function GroupChat({ groupId, user, onAccessRevoked, embedded = false }) {
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
   const [connected, setConnected] = useState(false);
@@ -23,6 +23,9 @@ export default function GroupChat({ groupId, user, embedded = false }) {
   const [error, setError] = useState('');
   const listRef = useRef(null);
   const socketRef = useRef(null);
+  const onAccessRevokedRef = useRef(onAccessRevoked);
+
+  useEffect(() => { onAccessRevokedRef.current = onAccessRevoked; }, [onAccessRevoked]);
 
   useEffect(() => {
     let mounted = true;
@@ -55,6 +58,19 @@ export default function GroupChat({ groupId, user, embedded = false }) {
     socket.on('group:message', (message) => {
       if (mounted && message.groupId === groupId) setMessages((current) => mergeMessages(current, [message]));
     });
+    const handleAccessRevoked = (event, reason) => {
+      const revokedGroupId = typeof event?.groupId === 'string' ? event.groupId : '';
+      if (!mounted || !revokedGroupId) return;
+      onAccessRevokedRef.current?.(revokedGroupId, reason);
+      if (revokedGroupId !== groupId) return;
+      setJoined(false);
+      setConnected(false);
+      setLoading(false);
+      setError(reason === 'deleted' ? 'This group was deleted.' : 'You were removed from this group.');
+      socket.disconnect();
+    };
+    socket.on('group:membership-removed', (event) => handleAccessRevoked(event, 'removed'));
+    socket.on('group:deleted', (event) => handleAccessRevoked(event, 'deleted'));
     return () => { mounted = false; socketRef.current = null; socket.removeAllListeners(); socket.disconnect(); };
   }, [groupId]);
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Copy, MessageCircle, Plus, Settings2, Trash2, UserMinus, Users, X } from 'lucide-react';
 import GroupChat from './GroupChat.jsx';
 import { api } from '../utils/api.js';
@@ -16,8 +16,19 @@ export default function ChatPage({ groups, user, selectedGroup, loading, onSelec
   const [groupDetailsOpen, setGroupDetailsOpen] = useState(false);
   const [groupActionBusy, setGroupActionBusy] = useState(false);
   const [error, setError] = useState('');
+  const deletingGroupIdRef = useRef(null);
 
   const openModal = (next) => { setError(''); setCreatedCode(''); setModal(next); };
+
+  const handleGroupAccessRevoked = useCallback((groupId, reason) => {
+    const revokedGroup = groups.find((group) => group.id === groupId);
+    if (!revokedGroup || (reason === 'deleted' && deletingGroupIdRef.current === groupId)) return;
+    onGroupDeleted?.(groupId);
+    if (selectedGroup?.id === groupId) onSelectGroup(null);
+    notify(reason === 'deleted'
+      ? `“${revokedGroup.name}” was deleted.`
+      : `You no longer have access to “${revokedGroup.name}”.`, true);
+  }, [groups, notify, onGroupDeleted, onSelectGroup, selectedGroup]);
 
   const createGroup = async (event) => {
     event.preventDefault();
@@ -56,6 +67,7 @@ export default function ChatPage({ groups, user, selectedGroup, loading, onSelec
   const deleteGroup = async () => {
     if (!selectedGroup?.isAdmin || groupActionBusy) return;
     if (!window.confirm(`Delete “${selectedGroup.name}”? This will permanently remove the group, its expenses, and its chat messages.`)) return;
+    deletingGroupIdRef.current = selectedGroup.id;
     setGroupActionBusy(true);
     try {
       await api(`/api/groups/${selectedGroup.id}`, { method: 'DELETE' });
@@ -63,7 +75,7 @@ export default function ChatPage({ groups, user, selectedGroup, loading, onSelec
       setGroupDetailsOpen(false);
       notify('Group deleted.');
     } catch (requestError) { notify(requestError.message, true); }
-    finally { setGroupActionBusy(false); }
+    finally { deletingGroupIdRef.current = null; setGroupActionBusy(false); }
   };
 
   const removeMember = async (member) => {
@@ -98,7 +110,7 @@ export default function ChatPage({ groups, user, selectedGroup, loading, onSelec
         {selectedGroup ? <>
           <header className="chat-conversation-header"><GroupIcon/><div className="chat-conversation-title"><h2>{selectedGroup.name}</h2><p>{selectedGroup.members.length} {selectedGroup.members.length === 1 ? 'member' : 'members'}</p></div><button className="button chat-group-settings-button" type="button" aria-expanded={groupDetailsOpen} onClick={() => setGroupDetailsOpen((open) => !open)}><Settings2 size={15}/><span>Group details</span></button><button className="button chat-expenses-button" type="button" onClick={() => onViewExpenses(selectedGroup)}>View Expenses</button></header>
           {groupDetailsOpen && <section className="chat-group-details" aria-label="Group details"><div className="chat-group-details-title"><h3>Group members</h3><button type="button" className="icon-button" aria-label="Close group details" onClick={() => setGroupDetailsOpen(false)}><X size={16}/></button></div><ul>{selectedGroup.members.map((member) => <li key={member.id}><span>{member.name}{member.role === 'admin' && <small>Admin</small>}</span>{selectedGroup.isAdmin && member.role !== 'admin' && <button type="button" className="chat-remove-member-button" disabled={groupActionBusy} onClick={() => removeMember(member)}><UserMinus size={14}/>Remove member</button>}</li>)}</ul>{selectedGroup.isAdmin && <button type="button" className="button chat-delete-group-button" disabled={groupActionBusy} onClick={deleteGroup}><Trash2 size={15}/>{groupActionBusy ? 'Please wait…' : 'Delete Group'}</button>}</section>}
-          <GroupChat groupId={selectedGroup.id} user={user} embedded/>
+          <GroupChat groupId={selectedGroup.id} user={user} onAccessRevoked={handleGroupAccessRevoked} embedded/>
         </> : <div className="chat-no-selection"><span className="chat-no-selection-icon"><MessageCircle size={26}/></span><h2>Select a group to start chatting</h2><p>Your group messages will appear here. Create a group or join your friends&apos; trip to get started.</p><div><button className="button chat-create-button" type="button" onClick={() => openModal('create')}><Plus size={16}/>Create Group</button><button className="button chat-join-button" type="button" onClick={() => openModal('join')}>Join Group</button></div></div>}
       </section>
     </div>
