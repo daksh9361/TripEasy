@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Check, LayoutDashboard, LogOut, Menu, MessageCircle, Moon, Plane, Plus, ReceiptText, Sun, UserRound, X } from 'lucide-react';
+import { Check, LayoutDashboard, LogOut, Mail, Menu, MessageCircle, Moon, Plane, Plus, ReceiptText, Sun, UserRound, X } from 'lucide-react';
 import TripForm from './components/TripForm.jsx';
 import ExpenseForm from './components/ExpenseForm.jsx';
 import ExpenseTable from './components/ExpenseTable.jsx';
 import ChatPage from './components/ChatPage.jsx';
+import ContactFeedbackPage from './components/ContactFeedbackPage.jsx';
 import { api } from './utils/api.js';
 import { calculateExpenseSummary, formatCurrency, toCents } from './utils/expenseCalculations.js';
 
@@ -245,6 +246,7 @@ export default function TripDashboard({ user, onLogout, onUserChange }) {
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'expenses', label: 'Expenses', icon: ReceiptText },
     { id: 'chat', label: 'Chat', icon: MessageCircle },
+    { id: 'contact', label: 'Contact & Feedback', icon: Mail },
     { id: 'profile', label: 'Profile', icon: UserRound },
   ];
   const uiExpenses = currentExpenses.map((expense) => ({ ...expense, paidBy: activeTrip?.members.find((member) => member.id === expense.paidByMemberId)?.name || 'Unknown' }));
@@ -288,6 +290,7 @@ export default function TripDashboard({ user, onLogout, onUserChange }) {
       </section>}
 
       {page === 'profile' && <ProfilePage user={user} onUserChange={onUserChange} notify={notify}/>}
+      {page === 'contact' && <ContactFeedbackPage user={user} notify={notify}/>}
       {settlementConfirmation && activeTrip && <div className="dialog-backdrop"><section className="confirm-dialog panel" role="alertdialog" aria-modal="true" aria-labelledby="settlement-confirm-title"><p className="eyebrow">SETTLEMENT PAYMENT</p><h2 id="settlement-confirm-title">Mark payment as settled?</h2><p>Confirm that {settlementConfirmation.from} paid {settlementConfirmation.to} {formatCurrency(settlementConfirmation.amountCents)}.</p><div className="dialog-actions"><button className="button button-secondary" disabled={settlingPayment} onClick={() => setSettlementConfirmation(null)}>Cancel</button><button className="button button-primary" disabled={settlingPayment} onClick={markPaymentSettled}>{settlingPayment ? 'Saving…' : 'Confirm Settled'}</button></div></section></div>}
       {showEndTripConfirm && activeTrip && <div className="dialog-backdrop"><section className="confirm-dialog panel" role="alertdialog" aria-modal="true" aria-labelledby="end-trip-title"><p className="eyebrow">COMPLETE TRIP</p><h2 id="end-trip-title">End this trip?</h2><p>Are you sure you want to end this trip?</p><div className="dialog-actions"><button className="button button-secondary" disabled={endingTrip} onClick={() => setShowEndTripConfirm(false)}>Cancel</button><button className="button button-primary" disabled={endingTrip} onClick={endTrip}>{endingTrip ? 'Ending Trip…' : 'Confirm End Trip'}</button></div></section></div>}
       {deletingExpense && <div className="dialog-backdrop"><section className="confirm-dialog panel" role="alertdialog" aria-modal="true" aria-labelledby="delete-title"><p className="eyebrow">REMOVE EXPENSE</p><h2 id="delete-title">Delete expense?</h2><p>“{deletingExpense.description}” will be removed from this trip.</p><div className="dialog-actions"><button className="button button-secondary" onClick={() => setDeletingExpense(null)}>Cancel</button><button className="button button-danger" onClick={confirmDeleteExpense}>Delete Expense</button></div></section></div>}

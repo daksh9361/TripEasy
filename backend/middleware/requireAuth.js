@@ -35,4 +35,9 @@ async function requireAuth(req, res, next) {
   }
 }
 
-module.exports = { requireAuth, COOKIE_NAME };
+function optionalAuth(req, res, next) {
+  if (!getCookie(req, COOKIE_NAME)) return next();
+  return requireAuth(req, res, next);
+}
+
+module.exports = { requireAuth, optionalAuth, COOKIE_NAME };

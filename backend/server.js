@@ -9,6 +9,7 @@ const healthRoutes = require('./routes/health');
 const authRoutes = require('./routes/auth');
 const tripRoutes = require('./routes/trips');
 const groupRoutes = require('./routes/groups');
+const contactFeedbackRoutes = require('./routes/contactFeedback').router;
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -32,6 +33,7 @@ app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/trips', tripRoutes);
 app.use('/api/groups', groupRoutes);
+app.use('/api/contact-feedback', contactFeedbackRoutes);
 
 const io = new Server(httpServer, { cors: { origin: [...allowedOrigins], credentials: true } });
 const groupChatActions = require('./sockets/groupChat')(io);
